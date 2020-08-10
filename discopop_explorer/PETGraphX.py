@@ -85,6 +85,7 @@ class CUNode:
     end_line: int
     type: NodeType
     name: str
+    basic_block_id: str
     instructions_count: int = -1
     loop_iterations: int = -1
     reduction: bool = False
@@ -149,7 +150,7 @@ def parse_cu(node: ObjectifiedElement) -> CUNode:
             n.global_vars = [Variable(v.get('type'), v.text) for v in getattr(node.globalVariables, 'global')]
 
         # TODO self.graph.vp.instructionsCount[v] = node.instructionsCount
-        # TODO self.graph.vp.BasicBlockID[v] = node.BasicBlockID
+        n.basic_block_id = node.BasicBlockID.text
     return n
 
 
@@ -485,3 +486,20 @@ class PETGraphX(object):
                 path.insert(0, source)
                 return path
         return []
+
+    def successors_of(self, root: CUNode) -> List[CUNode]:
+        """Gets only direct children of any type
+
+        :param root: root node
+        :return: list of direct children
+        """
+        return [self.node_at(t) for s, t, d in self.out_edges(root.id, EdgeType.SUCCESSOR)]
+
+    def parent_of(self, root: CUNode) -> CUNode:
+        """Gets only direct children of any type
+
+        :param root: root node
+        :return: list of direct children
+        """
+        res = [self.node_at(s) for s, t, d in self.in_edges(root.id, EdgeType.CHILD)]
+        return res[0] if res else None
