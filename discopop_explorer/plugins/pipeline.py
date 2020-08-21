@@ -48,9 +48,9 @@ def check_pipeline(pet: PETGraphX, root: CUNode):
     initial_matrix = deepcopy(matrix)
     initial_coef = get_correlation_coefficient(matrix)
 
-    print(f"matrix at {root.start_position()}: {initial_coef}")
-    for i in range(0, len(initial_matrix)):
-        print(" ".join([str(x) for x in initial_matrix[i]]))
+    # print(f"matrix at {root.start_position()}: {initial_coef}")
+    # for i in range(0, len(initial_matrix)):
+    #     print(" ".join([str(x) for x in initial_matrix[i]]))
 
     if initial_coef < 0.999:
         total += 1

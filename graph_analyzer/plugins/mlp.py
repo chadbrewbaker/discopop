@@ -72,10 +72,6 @@ def check_mlp(pet: PETGraphX, root_nodes: List[CUNode]):
     initial_matrix = deepcopy(matrix)
     initial_coef = get_correlation_coefficient(matrix)
 
-    print(f"matrix at {root_nodes[0].start_position()}: {initial_coef}")
-    for i in range(0, len(initial_matrix)):
-        print(" ".join([str(x) for x in initial_matrix[i]]))
-
     independent_cus = get_independent_lines(matrix)
     delete_lines(matrix, loop_subnodes, independent_cus)
 
@@ -83,9 +79,17 @@ def check_mlp(pet: PETGraphX, root_nodes: List[CUNode]):
     delete_lines(matrix, loop_subnodes, mergeable_cus)
 
     new_coef = get_correlation_coefficient(matrix)
-    print(f"final coef: {new_coef}")
-    for i in range(0, len(matrix)):
-        print(" ".join([str(x) for x in matrix[i]]))
+
+    if new_coef > 0.95:
+        print(f"MLP at node {root_nodes[0].id} detected:")
+        print(f"start line: {root_nodes[0].start_position()}")
+        print(f"end line: {root_nodes[-1].end_position()}")
+        print(f"initial coef: {initial_coef}")
+        for i in range(0, len(initial_matrix)):
+            print(" ".join([str(x) for x in initial_matrix[i]]))
+        print(f"final coef: {new_coef}")
+        for i in range(0, len(matrix)):
+            print(" ".join([str(x) for x in matrix[i]]))
 
 
 def delete_lines(matrix, loop_nodes, lines):
