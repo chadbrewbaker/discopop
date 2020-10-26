@@ -102,6 +102,13 @@ class CUNode:
         self.id = node_id
         self.file_id, self.node_id = parse_id(node_id)
 
+    @classmethod
+    def from_kwargs(cls, node_id: str, **kwargs):
+        node = cls(node_id)
+        for key, value in kwargs.items():
+            setattr(node, key, value)
+        return node
+
     def start_position(self) -> str:
         """Start position file_id:line
         e.g. 23:45
