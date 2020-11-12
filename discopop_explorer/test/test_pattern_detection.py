@@ -12,6 +12,7 @@ import networkx as nx  # type:ignore
 
 from discopop_explorer.PETGraphX import CUNode, DepType, Dependency, EdgeType, NodeType, PETGraphX
 from discopop_explorer.pattern_detectors.do_all_detector import run_detection as detect_do_all
+from discopop_explorer.pattern_detectors.pipeline_detector import run_detection as detect_pipeline
 from discopop_explorer.pattern_detectors.reduction_detector import run_detection as detect_reduction
 from discopop_explorer.variable import Variable
 
@@ -29,7 +30,13 @@ def loop_with_reduction():
     )
     g.add_node(loop_node.id, data=loop_node)
     var_node = CUNode.from_kwargs(
-        node_id="0:1", type=NodeType.CU, name="var", local_vars=[Variable("int", "x")]
+        node_id="0:1",
+        source_file=0,
+        start_line=1,
+        end_line=1,
+        type=NodeType.CU,
+        name="var",
+        local_vars=[Variable("int", "x")],
     )
     g.add_node(var_node.id, data=var_node)
     g.add_edge(loop_node.id, var_node.id, data=Dependency(EdgeType.CHILD))
@@ -90,3 +97,45 @@ class DoAllDetectorTest(unittest.TestCase):
         raw_dependency.dtype = DepType.RAW
         g.add_edge(raw_node.id, var_node.id, data=raw_dependency)
         self.run_detection(g, reduction_vars, [])
+
+
+class PipelineDetector(unittest.TestCase):
+    def run_detection(self, g, reduction_vars, expected_node_ids):
+        patterns = detect_pipeline(PETGraphX(g, reduction_vars, {}))
+        self.assertListEqual([pattern.node_id for pattern in patterns], expected_node_ids)
+
+    def test_reduction_pattern(self):
+        g, reduction_vars, loop_node, *_ = loop_with_reduction()
+        self.run_detection(g, reduction_vars, [])
+        self.assertEqual(loop_node.pipeline, 0.0)
+
+    def test_raw_dependency_chain(self):
+        g, reduction_vars, loop_node, var_node = loop_with_reduction()
+        var_node2 = CUNode.from_kwargs(
+            node_id="0:2",
+            source_file=0,
+            start_line=2,
+            end_line=2,
+            type=NodeType.CU,
+            name="var2",
+            local_vars=[Variable("int", "y")],
+        )
+        g.add_node(var_node2.id, data=var_node2)
+        g.add_edge(loop_node.id, var_node2.id, data=Dependency(EdgeType.CHILD))
+        raw_dependency = Dependency(EdgeType.DATA)
+        raw_dependency.dtype = DepType.RAW
+        g.add_edge(var_node.id, var_node2.id, data=raw_dependency)
+        var_node3 = CUNode.from_kwargs(
+            node_id="0:3",
+            source_file=0,
+            start_line=3,
+            end_line=3,
+            type=NodeType.CU,
+            name="var3",
+            local_vars=[Variable("int", "z")],
+        )
+        g.add_node(var_node3.id, data=var_node3)
+        g.add_edge(loop_node.id, var_node3.id, data=Dependency(EdgeType.CHILD))
+        g.add_edge(var_node2.id, var_node3.id, data=raw_dependency)
+        self.run_detection(g, reduction_vars, [])
+        self.assertGreater(loop_node.pipeline, 0.0)
